@@ -145,7 +145,7 @@ static void dumpstate(Grammar *g, int si) {
             printf(" %s", g->syms[r->rhs[k]]->name);
         }
         if (r->nrhs == item.dot) printf(" .");
-        if (g->type == G_LR1) {
+        if (g->type == G_LR1 || g->type == G_LALR1) {
             char *lookahead = "$";
             if (item.lookahead)
                 lookahead = g->syms[item.lookahead]->name;
@@ -292,7 +292,7 @@ change:
         int repeat = 0;
         for (int ri = 0; ri < g->nrules; ri++) {
             if (g->rules[ri]->lhs != sym) continue;
-            if (g->type == G_LR1) {
+            if (g->type == G_LR1 || g->type == G_LALR1) {
                 int nextsym = 0;
                 if (item.dot + 1 < r->nrhs)
                     nextsym = r->rhs[item.dot + 1];
@@ -359,10 +359,28 @@ static int stateeq(State *a, State *b) {
     return 1;
 }
 
+static int stateeqlalr(State *a, State *b) {
+    for (int i = 0; i < a->nitems; i++) {
+        Item ia = a->items[i];
+        for (int k = 0; k < b->nitems; k++) {
+            Item ib = b->items[k];
+            if (ia.rule == ib.rule && ia.dot == ib.dot)
+                goto found;
+        }
+        return 0;
+found:
+        continue;
+    }
+    return 1;
+}
+
 static int findstate(Grammar *g, State *s) {
-    for (int i = 0; i < g->nstates; i++)
-        if (stateeq(g->states[i], s))
+    for (int i = 0; i < g->nstates; i++) {
+        if (g->type == G_LALR1 && stateeqlalr(g->states[i], s))
             return i;
+        else if (g->type != G_LALR1 && stateeq(g->states[i], s))
+            return i;
+    }
     return -1;
 }
 
@@ -443,6 +461,10 @@ changed:
             State *j = goto_(s, sym, g);
             int ji = findstate(g, j);
             if (ji != -1) {
+                if (g->type == G_LALR1) {
+                    for (int n = 0; n < j->nitems; n++)
+                        additem(g->states[ji], j->items[n]);
+                }
                 freestate(j);
             }
             else {
@@ -473,7 +495,7 @@ changed:
         for (Item *item = s->items; item < s->items + s->nitems; item++) {
             Rule *r = g->rules[item->rule];
             if (item->dot < r->nrhs) continue;
-            if (g->type == G_LR1) {
+            if (g->type == G_LR1 || g->type == G_LALR1) {
                 Action a = {AT_REDUCE, item->rule};
                 setaction(g, i, item->lookahead, a);
                 continue;
@@ -520,7 +542,7 @@ static void dotprintitem(FILE *fp, Item item, Grammar *g) {
 void dotdumpstates(Grammar *g, const char *path) {
     FILE *fp = fopen(path, "w");
     if (!fp) return;
-    fprintf(fp, "digraph myhraph {\n");
+    fprintf(fp, "digraph {\n");
     fprintf(fp, "rankdir=LR;\n");
     // fprintf(fp, "node [shape=box];\n");
     fprintf(fp, "node [shape=record];\n");
@@ -535,7 +557,7 @@ void dotdumpstates(Grammar *g, const char *path) {
             fprintf(fp, "\\l");
         }
         fprintf(fp, "}");
-        if (g->type == G_LR1) {
+        if (g->type == G_LR1 || g->type == G_LALR1) {
             fprintf(fp, "|{");
             for (Item *i = s->items; i < s->items + s->nitems; i++) {
                 if (i != s->items) fprintf(fp, "|");
@@ -554,5 +576,57 @@ void dotdumpstates(Grammar *g, const char *path) {
                 g->syms[e->sym]->name);
     }
     fprintf(fp, "}\n");
+    fclose(fp);
+}
+
+static Action getaction(Grammar *g, int state, int sym) {
+    return g->table[state * g->nsyms + sym];
+}
+
+static void dotdumpsymcol(Grammar *g, FILE *fp, int sym) {
+    fprintf(fp, "|{%s", g->syms[sym]->name);
+    for (int si = 0; si < g->nstates; si++) {
+        Action a = getaction(g, si, sym);
+        switch (a.type) {
+        case AT_SHIFT: fprintf(fp, "|s%i", a.num); break;
+        case AT_REDUCE: fprintf(fp, "|r%i", a.num); break;
+        case AT_GOTO: fprintf(fp, "|g%i", a.num); break;
+        case AT_ACCEPT: fprintf(fp, "|a"); break;
+        default: fprintf(fp, "|"); break;
+        }
+    }
+    fprintf(fp, "}");
+}
+
+void dotdumptable(Grammar *g, const char *path) {
+    FILE *fp = fopen(path, "w");
+    if (!fp) return;
+    fprintf(fp, "digraph {\n");
+    fprintf(fp, "node [shape=record];\n");
+    fprintf(fp, "0 [");
+    fprintf(fp, "label=\"");
+    
+    fprintf(fp, "{");
+    for (int i = 0; i < g->nstates; i++) {
+        fprintf(fp, "|%i", i);
+    }
+    fprintf(fp, "}");
+
+    // terminals
+    for (int i = 0; i < g->nsyms; i++)
+        if (g->syms[i]->type == S_TERM && i != S_EOI)
+            dotdumpsymcol(g, fp, i);
+
+    // eof terminal
+    dotdumpsymcol(g, fp, S_EOI);
+    
+    // non-terminals
+    for (int i = 0; i < g->nsyms; i++)
+        if (g->syms[i]->type == S_NON_TERM && i != g->start)
+            dotdumpsymcol(g, fp, i);
+
+    fprintf(fp, "\"");
+    fprintf(fp, "];\n");
+    fprintf(fp, "}");
     fclose(fp);
 }

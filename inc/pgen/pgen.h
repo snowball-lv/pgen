@@ -46,6 +46,7 @@ enum {
     G_LR0,
     G_SLR,
     G_LR1,
+    G_LALR1,
 };
 
 typedef struct {
@@ -87,3 +88,4 @@ void dumpstates(Grammar *g);
 void dumpall(Grammar *g);
 
 void dotdumpstates(Grammar *g, const char *path);
+void dotdumptable(Grammar *g, const char *path);

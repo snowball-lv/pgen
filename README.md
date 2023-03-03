@@ -1,5 +1,5 @@
 A library for generating and inspecting `LR` parsing tables.  
-Supports `LR(0)`, `SLR` or `LR(1)`, whichever you prefer.
+Supports `LR(0)`, `SLR`, `LR(1)` or `LALR(1)`, whichever you prefer.
 
 ## Usage
 
@@ -20,6 +20,10 @@ exp -> ( exp )
 
 ```bash
 dot states.dot -T png -o states.png
+dot table.dot -T png -o table.png
 ```
-
+`SLR` states  
 ![](states.png)
+
+`SLR` parsing table  
+![](table.png)

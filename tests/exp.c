@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
 
     dumpall(g);
     dotdumpstates(g, "states.dot");
+    dotdumptable(g, "table.dot");
 
     freegrammar(g);
     return 0;
