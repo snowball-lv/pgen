@@ -24,5 +24,11 @@ non-lalr: non-lalr.c
 	dot states.dot -T png -o states.png
 	dot table.dot -T png -o table.png
 
+.PHONY: expg
+expg:
+	./../bin/pgen -ds states.dot -dt table.dot -s -r -n -fr -fl exp.g
+	dot states.dot -T png -o states.png
+	dot table.dot -T png -o table.png
+
 clean:
 	rm -f exp lalr non-lalr *.dot *.png

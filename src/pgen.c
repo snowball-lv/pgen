@@ -529,12 +529,27 @@ void bake(Grammar *g) {
     calctable(g);
 }
 
+static void dotprintsafe(FILE *fp, char *str) {
+    while (*str) {
+        switch (*str) {
+            case '{': case '}':
+            case '<': case '>':
+            case '|': case '"':
+                fprintf(fp, "\\");
+        }
+        fprintf(fp, "%c", *str);
+        str++;
+    }
+}
+
 static void dotprintitem(FILE *fp, Item item, Grammar *g) {
     Rule *r = g->rules[item.rule];
-    fprintf(fp, "%s -\\>", g->syms[r->lhs]->name);
+    dotprintsafe(fp, g->syms[r->lhs]->name);
+    dotprintsafe(fp, " ->");
     for (int i = 0; i < r->nrhs; i++) {
         if (item.dot == i) fprintf(fp, " .");
-        fprintf(fp, " %s", g->syms[r->rhs[i]]->name);
+        fprintf(fp, " ");
+        dotprintsafe(fp, g->syms[r->rhs[i]]->name);
     }
     if (item.dot >= r->nrhs) fprintf(fp, " .");
 }
@@ -564,7 +579,7 @@ void dotdumpstates(Grammar *g, const char *path) {
                 char *sym = "?";
                 if (i->lookahead)
                     sym = g->syms[i->lookahead]->name;
-                fprintf(fp, "%s", sym);
+                dotprintsafe(fp, sym);
             }
             fprintf(fp, "}");
         }
@@ -572,8 +587,9 @@ void dotdumpstates(Grammar *g, const char *path) {
     }
     for (Edge *e = g->edges; e < g->edges + g->nedges; e++) {
         if (e->sym == S_EOI) continue;
-        fprintf(fp, "%i -> %i [label=\"%s\"];\n", e->from, e->to,
-                g->syms[e->sym]->name);
+        fprintf(fp, "%i -> %i [label=\"", e->from, e->to);
+        dotprintsafe(fp, g->syms[e->sym]->name);
+        fprintf(fp, "\"];\n");
     }
     fprintf(fp, "}\n");
     fclose(fp);
@@ -584,7 +600,8 @@ static Action getaction(Grammar *g, int state, int sym) {
 }
 
 static void dotdumpsymcol(Grammar *g, FILE *fp, int sym) {
-    fprintf(fp, "|{%s", g->syms[sym]->name);
+    fprintf(fp, "|{");
+    dotprintsafe(fp, g->syms[sym]->name);
     for (int si = 0; si < g->nstates; si++) {
         Action a = getaction(g, si, sym);
         switch (a.type) {
