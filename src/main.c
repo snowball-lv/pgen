@@ -167,31 +167,30 @@ static int getterm(Parser *p, Tok t) {
 static void parserule(Parser *p) {
     expect(p, T_SYM);
     Tok lhs = p->prev;
-    printf("%.*s\n", lhs.len, lhs.start);
     int lhssym = getnonterm(p, lhs);
-    if (p->nsyms == 1)
+    if (!p->g->start)
         p->g->start = lhssym;
     expect(p, T_ARROW);
     while (1) {
         int rhs[64];
         int nrhs = 0;
-        printf("    -");
         while (!match(p, T_BAR) && !match(p, T_SEMI)) {
             if (match(p, T_SYM)) {
-                printf(" %.*s", p->prev.len, p->prev.start);
                 int sym = getsym(p, p->prev);
                 if (!sym) sym = getnonterm(p, p->prev);
                 rhs[nrhs] = sym;
                 nrhs++;
             }
             else if (match(p, T_STR)) {
-                printf(" %.*s", p->prev.len, p->prev.start);
                 int sym = getterm(p, p->prev);
                 rhs[nrhs] = sym;
                 nrhs++;
             }
+            else {
+                printf("*** unexpected token %.*s\n", p->cur.len, p->cur.start);
+                exit(1);
+            }
         }
-        printf("\n");
         rhs[nrhs] = 0;
         addrule(p->g, newrule(lhssym, rhs));
         if (p->prev.type == T_SEMI) break;
@@ -257,10 +256,10 @@ int main(int argc, char **argv) {
         else if (strcmp(argv[i], "-dt") == 0) dottable = argv[++i];
         else if (strcmp(argv[i], "-t") == 0) {
             i++;
-            if (strcmp(argv[i], "lr0")) type = G_LR0;
-            else if (strcmp(argv[i], "slr")) type = G_SLR;
-            else if (strcmp(argv[i], "lr1")) type = G_LR1;
-            else if (strcmp(argv[i], "lalr1")) type = G_LALR1;
+            if (strcmp(argv[i], "lr0") == 0) type = G_LR0;
+            else if (strcmp(argv[i], "slr") == 0) type = G_SLR;
+            else if (strcmp(argv[i], "lr1") == 0) type = G_LR1;
+            else if (strcmp(argv[i], "lalr1") == 0) type = G_LALR1;
         }
         else if (!path) path = argv[i];
         else {
