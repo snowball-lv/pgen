@@ -65,3 +65,39 @@ dot table.dot -T png -o table.png
 
 `SLR` parsing table  
 ![](table.png)
+
+## Notes
+
+Some notes to remind myself of the differences between `LR(0)`, `SLR`, `LR(1)` and `LALR(1)` grammars.
+
+Suppose your parser has a state with the following items.
+
+```
+S -> exp .
+S -> exp . "+" NUM
+```
+
+An `LR(0)` parser will attempt to reduce whenever possible on every lookahead, even on `"+"` in this case. This item will cause a `shift/reduce` error as it attempts to reduce by rule `S -> exp` and shift on `"+"`.
+
+An `SLR` parser would reduce by `S -> exp` only if the lookahead was in `follow(S)`. In this case, if `"+"` was in `follow(S)` it would cause a `shift/reduce` error in an `SLR` parser.
+
+An `LR(1)` parser modifies the notion of an item by pairing each one with a lookahead.
+
+An item such as `{S -> a . b | $}` implies that the remaining input can be derived from `b $`.
+
+Method for calculating `closures` in `LR(1)`.
+
+```
+closure(I) {
+    for each item {S -> a . B c | x} in I
+        for each production B -> b
+            for each symbol in first(cx)
+                add {B -> . b | symbol} to I
+    until I doesn't change
+    return I
+}
+```
+
+Reductions are inserted in the parsing table for the lookaheads found in these items.
+
+An `LALR(1)` parser is an `LR(1)` parser where equivalent states (<u>ignoring the lookaheads</u>) are merged.
