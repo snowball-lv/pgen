@@ -100,4 +100,4 @@ closure(I) {
 
 Reductions are inserted in the parsing table for the lookaheads found in these items.
 
-An `LALR(1)` parser is an `LR(1)` parser where equivalent states (<u>ignoring the lookaheads</u>) are merged.
+An `LALR(1)` parser is an `LR(1)` parser where equivalent states are merged. **Lookaheads are ignored when comparing states.**
