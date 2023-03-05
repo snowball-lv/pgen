@@ -247,7 +247,11 @@ int main(int argc, char **argv) {
     char *dottable = 0;
     int type = G_LALR1;
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-s") == 0) psyms = 1;
+        if (strcmp(argv[i], "-h") == 0) {
+            help();
+            return 0;
+        }
+        else if (strcmp(argv[i], "-s") == 0) psyms = 1;
         else if (strcmp(argv[i], "-r") == 0) prules = 1;
         else if (strcmp(argv[i], "-n") == 0) pnul = 1;
         else if (strcmp(argv[i], "-fr") == 0) pfirst = 1;
