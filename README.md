@@ -1,4 +1,4 @@
-A library for generating and inspecting `LR` parsing tables.  
+A library/tool for generating and inspecting `LR` parsing tables.  
 Supports `LR(0)`, `SLR`, `LR(1)` or `LALR(1)`, whichever you prefer.
 
 ## Usage
