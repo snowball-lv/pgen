@@ -30,5 +30,13 @@ expg:
 	dot states.dot -T png -o states.png
 	dot table.dot -T png -o table.png
 
+.PHONY: expp
+expp:
+	./../bin/pgen -ds states.dot -dt table.dot -t slr -g expp.c -s -r expp.g
+	dot states.dot -T png -o states.png
+	dot table.dot -T png -o table.png
+	gcc -O2 expp.c -o expp
+	./expp
+
 clean:
 	rm -f exp lalr non-lalr *.dot *.png

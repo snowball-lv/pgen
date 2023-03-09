@@ -14,6 +14,7 @@ enum {
     T_SEMI,
     T_START,
     T_TERM,
+    T_CODE,
 };
 
 typedef struct {
@@ -32,6 +33,7 @@ typedef struct {
     int nstrs;
     Tok *syms;
     int nsyms;
+    char *code;
 } Parser;
 
 static char *readfile(char *path) {
@@ -95,6 +97,8 @@ static void advance(Parser *p) {
             p->cur.type = T_START;
         else if (strncmp(p->cur.start, "%term", p->cur.len) == 0)
             p->cur.type = T_TERM;
+        else if (strncmp(p->cur.start, "%code", p->cur.len) == 0)
+            p->cur.type = T_CODE;
     }
 }
 
@@ -102,6 +106,10 @@ static int match(Parser *p, int type) {
     if (p->cur.type != type) return 0;
     advance(p);
     return 1;
+}
+
+static int peek(Parser *p) {
+    return p->cur.type;
 }
 
 static void expect(Parser *p, int type) {
@@ -113,6 +121,7 @@ static void expect(Parser *p, int type) {
 static char *getstr(Parser *p, Tok t) {
     for (int i = 0; i < p->nstrs; i++) {
         char *str = p->strs[i];
+        if (strlen(str) != t.len) continue;
         if (strncmp(str, t.start, t.len) == 0) return str;
     }
     char *cpy = malloc(t.len + 1);
@@ -208,6 +217,12 @@ static void parse(Parser *p) {
             expect(p, T_SYM);
             getterm(p, p->prev);
         }
+        else if (peek(p) == T_CODE) {
+            int len = strlen(p->src);
+            p->code = malloc(len + 1);
+            strcpy(p->code, p->src);
+            return;
+        }
         else {
             parserule(p);
         }
@@ -224,6 +239,7 @@ static char *OPTS[] = {
     "-fl:print follow sets",
     "-ds file:print state transitions to file in DOT",
     "-dt file:print parsing table to file in DOT",
+    "-g file:generate a parser in C and write to file",
     0,
 };
 
@@ -245,6 +261,7 @@ int main(int argc, char **argv) {
     int pfollow = 0;
     char *dotstates = 0;
     char *dottable = 0;
+    char *cparser = 0;
     int type = G_LALR1;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h") == 0) {
@@ -265,6 +282,7 @@ int main(int argc, char **argv) {
             else if (strcmp(argv[i], "lr1") == 0) type = G_LR1;
             else if (strcmp(argv[i], "lalr1") == 0) type = G_LALR1;
         }
+        else if (strcmp(argv[i], "-g") == 0) cparser = argv[++i];
         else if (!path) path = argv[i];
         else {
             printf("*** stray argument %s\n", argv[i]);
@@ -291,9 +309,17 @@ int main(int argc, char **argv) {
     if (pfollow) dumpfollow(p.g);
     if (dotstates) dotdumpstates(p.g, dotstates);
     if (dottable) dotdumptable(p.g, dottable);
+    if (cparser) {
+        FILE *fp = fopen(cparser, "w");
+        if (fp) {
+            genc(p.g, p.code, fp);
+            fclose(fp);
+        }
+    }
     freegrammar(p.g);
     free(src);
     if (p.strs) free(p.strs);
     if (p.syms) free(p.syms);
+    if (p.code) free(p.code);
     return 0;
 }

@@ -89,3 +89,5 @@ void dumpall(Grammar *g);
 
 void dotdumpstates(Grammar *g, const char *path);
 void dotdumptable(Grammar *g, const char *path);
+
+void genc(Grammar *g, char *usrcode, FILE *fp);

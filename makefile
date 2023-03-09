@@ -26,4 +26,4 @@ clean:
 	rm -rf out bin
 
 test: all
-	cd tests; make expg
+	cd tests; make expp

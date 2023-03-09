@@ -647,3 +647,7 @@ void dotdumptable(Grammar *g, const char *path) {
     fprintf(fp, "}");
     fclose(fp);
 }
+
+void genc(Grammar *g, char *usrcode, FILE *fp) {
+    fprintf(fp, "%s", usrcode);
+}
