@@ -652,6 +652,79 @@ void dotdumptable(Grammar *g, const char *path) {
     fclose(fp);
 }
 
+#define P(fmt, ...) fprintf(fp, "%*s" fmt, indent, "", ## __VA_ARGS__);
+
 void genc(Grammar *g, char *usrcode, FILE *fp) {
+    fprintf(fp, "#define T_NONE 0\n");
+    fprintf(fp, "#define T_EOF 1\n");
+    for (int i = 2; i < g->nsyms; i++) {
+        Sym *sym = g->syms[i];
+        if (sym->type != S_TERM) continue;
+        fprintf(fp, "#define %s %i\n", sym->name, i);
+    }
     fprintf(fp, "%s", usrcode);
+    int indent = 0;
+    P("static void parse(Parser *p) {\n");
+    indent += 4;
+        P("Stack s = {0};\n");
+        P("int input;\n");
+        P("push(&s, (Item){0});\n");
+        P("advance(p);\n");
+        P("input = p->cur.type;\n");
+        fprintf(fp, "main_loop:\n");
+        P("switch (top(&s).state) {\n");
+        for (int i = 0; i < g->nstates; i++) {
+            P("case %i: {\n", i);
+            indent += 4;
+            P("switch (input) {\n");
+            for (int k = 0; k < g->nsyms; k++) {
+                Action a = getaction(g, i, k);
+                if (a.type == _AT_NONE) continue;
+                P("case %i: { // %s\n", k, g->syms[k]->name);
+                indent += 4;
+                    switch (a.type) {
+                    case AT_SHIFT:
+                        P("push(&s, (Item){%i, %i, p->cur});\n", a.num, k);
+                        P("advance(p);\n");
+                        P("input = p->cur.type;\n");
+                        P("goto main_loop;\n");
+                        break;
+                    case AT_REDUCE: {
+                        Rule *r = g->rules[a.num];
+                        P("s.nitems -= %i;\n", r->nrhs);
+                        P("input = %i;\n", r->lhs);
+                        P("goto main_loop;\n");
+                        break;
+                    }
+                    case AT_GOTO:
+                        P("push(&s, (Item){%i, %i});\n", a.num, k);
+                        P("input = p->cur.type;\n");
+                        P("goto main_loop;\n");
+                        break;
+                    case AT_ACCEPT:
+                        P("goto accept;\n");
+                        break;
+                    default:
+                        printf("*** bad action\n");
+                        exit(1);
+                    }
+                indent -= 4;
+                P("}\n");
+            }
+            P("default: goto error;\n");
+            P("}\n");
+            indent -= 4;
+            P("}\n");
+        }
+        P("default: goto error;\n");
+        P("}\n");
+        
+fprintf(fp, "accept:\n");
+        P("printf(\"successful parse!\\n\");\n");
+        P("return;\n");
+        fprintf(fp, "error:\n");
+        P("printf(\"*** parse error\\n\");\n");
+        P("exit(1);\n");
+    indent -= 4;
+    P("}\n");
 }
