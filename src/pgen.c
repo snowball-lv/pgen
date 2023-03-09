@@ -58,6 +58,10 @@ int addsym(Grammar *g, Sym *sym) {
     return g->nsyms - 1;
 }
 
+void setalias(Grammar *g, int sym, char *alias) {
+    g->syms[sym]->alias = alias;
+}
+
 Rule *newrule(int lhs, int *rhs) {
     Rule *r = calloc(1, sizeof(Rule));
     r->lhs = lhs;

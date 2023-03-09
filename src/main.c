@@ -143,6 +143,17 @@ static int getsym(Parser *p, Tok t) {
     return 0;
 }
 
+static int findalias(Parser *p, char *alias) {
+    for (int i = 0; i < p->nsyms; i++) {
+        Tok t = p->syms[i];
+        char *symalias = p->g->syms[t.sym]->alias;
+        if (symalias && strcmp(symalias, alias) == 0)
+            return t.sym;
+    }
+    printf("*** no symbol with alias %s\n", alias);
+    exit(1);
+}
+
 static void addtoksym(Parser *p, Tok t) {
     p->nsyms++;
     p->syms = realloc(p->syms, p->nsyms * sizeof(Tok));
@@ -191,7 +202,8 @@ static void parserule(Parser *p) {
                 nrhs++;
             }
             else if (match(p, T_STR)) {
-                int sym = getterm(p, p->prev);
+                char *alias = getstr(p, p->prev);
+                int sym = findalias(p, alias);
                 rhs[nrhs] = sym;
                 nrhs++;
             }
@@ -215,7 +227,9 @@ static void parse(Parser *p) {
         }
         else if (match(p, T_TERM)) {
             expect(p, T_SYM);
-            getterm(p, p->prev);
+            int sym = getterm(p, p->prev);
+            if (match(p, T_STR))
+                setalias(p->g, sym, getstr(p, p->prev));
         }
         else if (peek(p) == T_CODE) {
             int len = strlen(p->src);

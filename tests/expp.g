@@ -1,14 +1,17 @@
 
 %term NUM
 %term ID
-%term PLUS
+%term PLUS "+"
+%term MINUS "-"
 
 %start S
 
 S -> exp;
 
 exp -> exp "+" NUM
-     | exp PLUS ID;
+     | exp PLUS ID
+     | exp "-" NUM
+     | exp MINUS ID;
 
 exp -> NUM | ID;
 

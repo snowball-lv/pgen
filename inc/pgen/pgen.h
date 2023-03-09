@@ -7,6 +7,7 @@ typedef struct {
         S_NON_TERM,
     } type;
     char *name;
+    char *alias;
 } Sym;
 
 typedef struct {
@@ -75,6 +76,7 @@ int addsym(Grammar *g, Sym *sym);
 Sym *newsym(int type, char *name);
 Rule *newrule(int lhs, int *rhs);
 int addrule(Grammar *g, Rule *r);
+void setalias(Grammar *g, int sym, char *alias);
 
 void bake(Grammar *g);
 
