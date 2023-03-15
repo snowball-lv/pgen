@@ -662,7 +662,7 @@ void genc(Grammar *g, char *usrcode, FILE *fp) {
         if (sym->type != S_TERM) continue;
         fprintf(fp, "#define %s %i\n", sym->name, i);
     }
-    fprintf(fp, "%s", usrcode);
+    fprintf(fp, "%s", usrcode ? usrcode : "");
     int indent = 0;
     P("static void parse(Parser *p) {\n");
     indent += 4;
