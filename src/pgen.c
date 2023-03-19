@@ -658,7 +658,7 @@ void dotdumptable(Grammar *g, const char *path) {
 
 #define P(fmt, ...) fprintf(fp, "%*s" fmt, indent, "", ## __VA_ARGS__);
 
-void genc(Grammar *g, char *usrcode, FILE *fp) {
+void genc(Grammar *g, char *usrcode, char *valu, FILE *fp) {
     fprintf(fp, "#define T_NONE 0\n");
     fprintf(fp, "#define T_EOF 1\n");
     for (int i = 2; i < g->nsyms; i++) {
@@ -666,6 +666,8 @@ void genc(Grammar *g, char *usrcode, FILE *fp) {
         if (sym->type != S_TERM) continue;
         fprintf(fp, "#define %s %i\n", sym->name, i);
     }
+    if (valu)
+        fprintf(fp, "typedef struct %s Value;", valu);
     fprintf(fp, "%s", usrcode ? usrcode : "");
     int indent = 0;
     P("static void parse(Parser *p) {\n");

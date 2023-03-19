@@ -5,6 +5,11 @@
 %term STAR "*"
 %term SLASH "/"
 
+%union {
+    int i;
+    float f;
+}
+
 %start S
 
 S -> exp { printf("result %i\n", V(0).i); };
@@ -60,10 +65,6 @@ static void advance(Parser *p) {
     p->prev = p->cur;
     p->cur = nexttok(p);
 }
-
-typedef struct {
-    int i;
-} Value;
 
 typedef struct {
     int state;

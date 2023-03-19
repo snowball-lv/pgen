@@ -16,6 +16,7 @@ enum {
     T_TERM,
     T_CODE,
     T_ACT,
+    T_UNION,
 };
 
 typedef struct {
@@ -35,6 +36,7 @@ typedef struct {
     Tok *syms;
     int nsyms;
     char *code;
+    char *valu;
 } Parser;
 
 static char *readfile(char *path) {
@@ -109,6 +111,8 @@ static void advance(Parser *p) {
             p->cur.type = T_TERM;
         else if (strncmp(p->cur.start, "%code", p->cur.len) == 0)
             p->cur.type = T_CODE;
+        else if (strncmp(p->cur.start, "%union", p->cur.len) == 0)
+            p->cur.type = T_UNION;
     }
 }
 
@@ -255,6 +259,10 @@ static void parse(Parser *p) {
             strcpy(p->code, p->src);
             return;
         }
+        else if (match(p, T_UNION)) {
+            expect(p, T_ACT);
+            p->valu = getstr(p, p->prev);
+        }
         else {
             parserule(p);
         }
@@ -344,12 +352,14 @@ int main(int argc, char **argv) {
     if (cparser) {
         FILE *fp = fopen(cparser, "w");
         if (fp) {
-            genc(p.g, p.code, fp);
+            genc(p.g, p.code, p.valu, fp);
             fclose(fp);
         }
     }
     freegrammar(p.g);
     free(src);
+    for (int i = 0; i < p.nstrs; i++)
+        free(p.strs[i]);
     if (p.strs) free(p.strs);
     if (p.syms) free(p.syms);
     if (p.code) free(p.code);
