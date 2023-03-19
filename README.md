@@ -57,6 +57,9 @@ For better readability, state transitions can be dumped in [DOT](https://en.wiki
 In `grammar.g`:
 ```
 %term NUM
+%term PLUS "+"
+%term LPAREN "("
+%term RPAREN ")"
 S -> exp;
 exp -> exp "+" NUM;
 exp -> NUM;

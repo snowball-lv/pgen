@@ -550,14 +550,20 @@ static void dotprintsafe(FILE *fp, char *str) {
     }
 }
 
+// display name, alias or token name
+static char *symdname(Grammar *g, int sym) {
+    Sym *s = g->syms[sym];
+    return s->alias ? s->alias : s->name;
+}
+
 static void dotprintitem(FILE *fp, Item item, Grammar *g) {
     Rule *r = g->rules[item.rule];
-    dotprintsafe(fp, g->syms[r->lhs]->name);
+    dotprintsafe(fp, symdname(g, r->lhs));
     dotprintsafe(fp, " ->");
     for (int i = 0; i < r->nrhs; i++) {
         if (item.dot == i) fprintf(fp, " .");
         fprintf(fp, " ");
-        dotprintsafe(fp, g->syms[r->rhs[i]]->name);
+        dotprintsafe(fp, symdname(g, r->rhs[i]));
     }
     if (item.dot >= r->nrhs) fprintf(fp, " .");
 }
@@ -586,7 +592,7 @@ void dotdumpstates(Grammar *g, const char *path) {
                 if (i != s->items) fprintf(fp, "|");
                 char *sym = "?";
                 if (i->lookahead)
-                    sym = g->syms[i->lookahead]->name;
+                    sym = symdname(g, i->lookahead);
                 dotprintsafe(fp, sym);
             }
             fprintf(fp, "}");
@@ -596,7 +602,7 @@ void dotdumpstates(Grammar *g, const char *path) {
     for (Edge *e = g->edges; e < g->edges + g->nedges; e++) {
         if (e->sym == S_EOI) continue;
         fprintf(fp, "%i -> %i [label=\"", e->from, e->to);
-        dotprintsafe(fp, g->syms[e->sym]->name);
+        dotprintsafe(fp, symdname(g, e->sym));
         fprintf(fp, "\"];\n");
     }
     fprintf(fp, "}\n");
@@ -609,7 +615,7 @@ static Action getaction(Grammar *g, int state, int sym) {
 
 static void dotdumpsymcol(Grammar *g, FILE *fp, int sym) {
     fprintf(fp, "|{");
-    dotprintsafe(fp, g->syms[sym]->name);
+    dotprintsafe(fp, symdname(g, sym));
     for (int si = 0; si < g->nstates; si++) {
         Action a = getaction(g, si, sym);
         switch (a.type) {
