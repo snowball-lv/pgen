@@ -15,6 +15,7 @@ enum {
     T_START,
     T_TERM,
     T_CODE,
+    T_ACT,
 };
 
 typedef struct {
@@ -62,6 +63,7 @@ static Tok nexttok(Parser *p) {
     case '|': p->src++; return (Tok){T_BAR, start, 1};
     case ';': p->src++; return (Tok){T_SEMI, start, 1};
     case '"': p->src++; goto str;
+    case '{': p->src++; goto act;
     case '%': p->src++; goto sym;
     case '#':
         while (*p->src && *p->src != '\n')
@@ -86,6 +88,14 @@ str:
             return (Tok){T_STR, start, p->src - start};
     }
     printf("*** unterminated string\n");
+    exit(1);
+act:
+    while (*p->src) {
+        p->src++;
+        if (p->src[-1] == '}')
+            return (Tok){T_ACT, start, p->src - start};
+    }
+    printf("*** unterminated action\n");
     exit(1);
 }
 
@@ -194,7 +204,7 @@ static void parserule(Parser *p) {
     while (1) {
         int rhs[64];
         int nrhs = 0;
-        while (!match(p, T_BAR) && !match(p, T_SEMI)) {
+        while (!match(p, T_BAR) && !match(p, T_SEMI) && !match(p, T_ACT)) {
             if (match(p, T_SYM)) {
                 int sym = getsym(p, p->prev);
                 if (!sym) sym = getnonterm(p, p->prev);
@@ -213,7 +223,15 @@ static void parserule(Parser *p) {
             }
         }
         rhs[nrhs] = 0;
-        addrule(p->g, newrule(lhssym, rhs));
+        int r = addrule(p->g, newrule(lhssym, rhs));
+        if (p->prev.type == T_ACT) {
+            char *act = getstr(p, p->prev);
+            setusraction(p->g, r, act);
+            if (!match(p, T_BAR) && !match(p, T_SEMI)) {
+                printf("*** expected end of production after action\n");
+                exit(1);
+            }
+        }
         if (p->prev.type == T_SEMI) break;
     }
 }

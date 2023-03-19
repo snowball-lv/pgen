@@ -9,10 +9,10 @@
 
 S -> exp;
 
-exp -> exp "+" NUM
-     | exp "-" NUM
-     | exp "*" NUM
-     | exp "/" NUM;
+exp -> exp "+" NUM { printf("matched add\n"); }
+     | exp "-" NUM { printf("matched sub\n"); }
+     | exp "*" NUM { printf("matched mul\n"); }
+     | exp "/" NUM { printf("matched div\n"); };
 
 exp -> NUM;
 
@@ -82,7 +82,7 @@ static Item top(Stack *s) {
 
 static void parse(Parser *p);
 
-static char *SRC = "1 + 2 + 3 + 4 + 5";
+static char *SRC = "1 + 2 - 3 * 4 / 5";
 
 int main(int argc, char **argv) {
     printf("Hello, World!\n");

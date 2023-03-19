@@ -62,6 +62,10 @@ void setalias(Grammar *g, int sym, char *alias) {
     g->syms[sym]->alias = alias;
 }
 
+void setusraction(Grammar *g, int rule, char *usraction) {
+    g->rules[rule]->usraction = usraction;
+}
+
 Rule *newrule(int lhs, int *rhs) {
     Rule *r = calloc(1, sizeof(Rule));
     r->lhs = lhs;
@@ -693,6 +697,8 @@ void genc(Grammar *g, char *usrcode, FILE *fp) {
                         Rule *r = g->rules[a.num];
                         P("s.nitems -= %i;\n", r->nrhs);
                         P("input = %i;\n", r->lhs);
+                        if (r->usraction)
+                            P("%s;", r->usraction);
                         P("goto main_loop;\n");
                         break;
                     }

@@ -14,6 +14,7 @@ typedef struct {
     int lhs;
     int *rhs;
     int nrhs;
+    char *usraction;
 } Rule;
 
 typedef struct {
@@ -77,6 +78,7 @@ Sym *newsym(int type, char *name);
 Rule *newrule(int lhs, int *rhs);
 int addrule(Grammar *g, Rule *r);
 void setalias(Grammar *g, int sym, char *alias);
+void setusraction(Grammar *g, int rule, char *usraction);
 
 void bake(Grammar *g);
 
