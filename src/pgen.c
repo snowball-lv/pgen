@@ -656,9 +656,35 @@ void dotdumptable(Grammar *g, const char *path) {
     fclose(fp);
 }
 
+static const char *CHDRS = 
+"#include <stdio.h>\n"
+"#include <stdlib.h>\n"
+"#include <ctype.h>\n"
+;
+
+static const char *CSRC = 
+"typedef struct { int type; char *start; int len; } Tok;\n"
+"typedef struct { char *src; Tok prev; Tok cur; } Parser;\n"
+"static Tok nexttok(Parser *p);\n"
+"static void advance(Parser *p) { p->prev = p->cur; p->cur = nexttok(p); }\n"
+"typedef struct { int state; int sym; Tok tok; Value val; } Item;\n"
+"typedef struct { Item *items; int nitems; } Stack;\n"
+"static void push(Stack *s, Item item) {\n"
+"    s->nitems++;\n"
+"    s->items = realloc(s->items, s->nitems * sizeof(Item));\n"
+"    s->items[s->nitems - 1] = item; }\n"
+"static Item top(Stack *s) { return s->items[s->nitems - 1]; }\n"
+"static void parse(Parser *p);\n"
+"#define S(n) (s.items[s.nitems + (n)])\n"
+"#define LEN(n) (S(n).tok.len)\n"
+"#define TXT(n) (S(n).tok.start)\n"
+"#define V(n) (S(n).val)\n"
+;
+
 #define P(fmt, ...) fprintf(fp, "%*s" fmt, indent, "", ## __VA_ARGS__);
 
 void genc(Grammar *g, char *usrcode, char *valu, FILE *fp) {
+    fprintf(fp, "%s", CHDRS);
     fprintf(fp, "#define T_NONE 0\n");
     fprintf(fp, "#define T_EOF 1\n");
     for (int i = 2; i < g->nsyms; i++) {
@@ -666,8 +692,8 @@ void genc(Grammar *g, char *usrcode, char *valu, FILE *fp) {
         if (sym->type != S_TERM) continue;
         fprintf(fp, "#define %s %i\n", sym->name, i);
     }
-    if (valu)
-        fprintf(fp, "typedef struct %s Value;", valu);
+    if (valu) fprintf(fp, "typedef struct %s Value;\n", valu);
+    fprintf(fp, "%s", CSRC);
     fprintf(fp, "%s", usrcode ? usrcode : "");
     int indent = 0;
     P("static void parse(Parser *p) {\n");
@@ -701,7 +727,7 @@ void genc(Grammar *g, char *usrcode, char *valu, FILE *fp) {
                         P("s.nitems -= %i;\n", r->nrhs);
                         P("input = %i;\n", r->lhs);
                         if (r->usraction)
-                            P("%s;", r->usraction);
+                            P("%s;\n", r->usraction);
                         P("goto main_loop;\n");
                         break;
                     }
@@ -730,9 +756,11 @@ void genc(Grammar *g, char *usrcode, char *valu, FILE *fp) {
         
 fprintf(fp, "accept:\n");
         P("printf(\"successful parse!\\n\");\n");
+        P("if (s.items) free(s.items);\n");
         P("return;\n");
         fprintf(fp, "error:\n");
         P("printf(\"*** parse error\\n\");\n");
+        P("if (s.items) free(s.items);\n");
         P("exit(1);\n");
     indent -= 4;
     P("}\n");

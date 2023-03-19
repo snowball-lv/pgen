@@ -4,42 +4,29 @@
 %term MINUS "-"
 %term STAR "*"
 %term SLASH "/"
+%term LPAREN "("
+%term RPAREN ")"
 
 %union {
     int i;
-    float f;
 }
 
 %start S
 
-S -> exp { printf("result %i\n", V(0).i); };
+S -> E          { printf("result is %i\n", V(0).i); };
 
-exp -> exp "+" num { R.i = V(0).i + V(2).i; printf("%i + %i\n", V(0).i, V(2).i); }
-     | exp "-" num { R.i = V(0).i - V(2).i; printf("%i - %i\n", V(0).i, V(2).i); }
-     | exp "*" num { R.i = V(0).i * V(2).i; printf("%i * %i\n", V(0).i, V(2).i); }
-     | exp "/" num { R.i = V(0).i / V(2).i; printf("%i / %i\n", V(0).i, V(2).i); };
+E -> E "+" T    { R.i = V(0).i + V(2).i; }
+   | E "-" T    { R.i = V(0).i - V(2).i; }
+   | T          { R = V(0); };
 
-exp -> num { R = V(0); };
+T -> T "*" F    { R.i = V(0).i * V(2).i; }
+   | T "/" F    { R.i = V(0).i / V(2).i; }
+   | F          { R = V(0); };
 
-num -> NUM { R.i = atoi(TXT(0)); };
+F -> NUM        { R.i = atoi(TXT(0)); };
+F -> "(" E ")"  { R = V(1); };
 
 %code 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-
-typedef struct {
-    int type;
-    char *start;
-    int len;
-} Tok;
-
-typedef struct {
-    char *src;
-    Tok prev;
-    Tok cur;
-} Parser;
 
 static Tok nexttok(Parser *p) {
     while (isspace(*p->src))
@@ -51,6 +38,8 @@ static Tok nexttok(Parser *p) {
     case '-': p->src++; return (Tok){MINUS, start, 1};
     case '*': p->src++; return (Tok){STAR, start, 1};
     case '/': p->src++; return (Tok){SLASH, start, 1};
+    case '(': p->src++; return (Tok){LPAREN, start, 1};
+    case ')': p->src++; return (Tok){RPAREN, start, 1};
     }
     if (isdigit(*start)) goto num;
     printf("*** unexpected char %c\n", *start);
@@ -61,47 +50,11 @@ num:
     return (Tok){NUM, start, p->src - start};
 }
 
-static void advance(Parser *p) {
-    p->prev = p->cur;
-    p->cur = nexttok(p);
-}
-
-typedef struct {
-    int state;
-    int sym;
-    Tok tok;
-    Value val;
-} Item;
-
-typedef struct {
-    Item *items;
-    int nitems;
-} Stack;
-
-static void push(Stack *s, Item item) {
-    s->nitems++;
-    s->items = realloc(s->items, s->nitems * sizeof(Item));
-    s->items[s->nitems - 1] = item;
-}
-
-static Item top(Stack *s) {
-    return s->items[s->nitems - 1];
-}
-
-static void parse(Parser *p);
-
-static char *SRC = "1 + 2 - 3 + 4 + 5";
-
-#define S(n) (s.items[s.nitems + (n)])
-#define LEN(n) (S(n).tok.len)
-#define TXT(n) (S(n).tok.start)
-#define V(n) (S(n).val)
+static char *SRC = "1 + (2 + 3) * 4";
 
 int main(int argc, char **argv) {
-    printf("Hello, World!\n");
     Parser p = {0};
     p.src = SRC;
     parse(&p);
     return 0;
 }
-
