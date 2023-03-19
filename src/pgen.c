@@ -755,7 +755,6 @@ void genc(Grammar *g, char *usrcode, char *valu, FILE *fp) {
         P("}\n");
         
 fprintf(fp, "accept:\n");
-        P("printf(\"successful parse!\\n\");\n");
         P("if (s.items) free(s.items);\n");
         P("return;\n");
         fprintf(fp, "error:\n");

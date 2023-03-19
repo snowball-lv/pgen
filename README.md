@@ -1,4 +1,4 @@
-A library/tool for generating and inspecting `LR` parsing tables.  
+A library/tool for generating parsers and inspecting `LR` parsing tables.  
 Supports `LR(0)`, `SLR`, `LR(1)` or `LALR(1)`, whichever you prefer.
 
 ## Usage
@@ -10,25 +10,33 @@ Do check out [this example](./tests/exp.c) of how to define a simple grammar in 
 
 The command line expects you to provide a file defining your grammar. The synax isn't [yacc](https://en.wikipedia.org/wiki/Yacc) compatible, but should be intuitive, sorry!
 
-[Here's](./tests/exp.g) an example of a valid grammar file:
+[Here's](./tests/exp.g) an example of a simple grammar file:
 ```
 # single-line comments
 
 # if start sym not specified - lhs of the first rule is used
 %start S
 
-# declare all your terminals that aren't quoted string literals
+# declare all your terminals
 # undeclared symbols are assumed to be non-terminals
 %term NUM
+%term PLUS
+
+# terminals can have string aliases (you still have to tokenize them yourself)
+%term MINUS "-"
+%term LPAREN "("
+%term RPAREN ")"
 
 S -> exp;
 
-exp -> exp "+" NUM
+exp -> exp PLUS NUM
      | exp "-" NUM
      | NUM;
 
 exp -> "(" exp ")";
 ```
+If you want to generate a parser and not just inspect your grammar - you'll have to define a few more things.  
+Check out [this](./tests/expp.g) example for a comprehensive grammar file.
 ```
 Usage: pgen [flags] file.g
     -h          print this message and exit
@@ -40,6 +48,7 @@ Usage: pgen [flags] file.g
     -fl         print follow sets
     -ds file    print state transitions to file in DOT
     -dt file    print parsing table to file in DOT
+    -g file     generate a parser in C and write to file
 ```
 
 ## DOT
