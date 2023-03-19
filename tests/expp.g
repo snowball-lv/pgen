@@ -7,14 +7,16 @@
 
 %start S
 
-S -> exp;
+S -> exp { printf("result %i\n", V(0).i); };
 
-exp -> exp "+" NUM { printf("matched add\n"); }
-     | exp "-" NUM { printf("matched sub\n"); }
-     | exp "*" NUM { printf("matched mul\n"); }
-     | exp "/" NUM { printf("matched div\n"); };
+exp -> exp "+" num { R.i = V(0).i + V(2).i; printf("%i + %i\n", V(0).i, V(2).i); }
+     | exp "-" num { R.i = V(0).i - V(2).i; printf("%i - %i\n", V(0).i, V(2).i); }
+     | exp "*" num { R.i = V(0).i * V(2).i; printf("%i * %i\n", V(0).i, V(2).i); }
+     | exp "/" num { R.i = V(0).i / V(2).i; printf("%i / %i\n", V(0).i, V(2).i); };
 
-exp -> NUM;
+exp -> num { R = V(0); };
+
+num -> NUM { R.i = atoi(TXT(0)); };
 
 %code 
 
@@ -60,9 +62,14 @@ static void advance(Parser *p) {
 }
 
 typedef struct {
+    int i;
+} Value;
+
+typedef struct {
     int state;
     int sym;
     Tok tok;
+    Value val;
 } Item;
 
 typedef struct {
@@ -82,7 +89,12 @@ static Item top(Stack *s) {
 
 static void parse(Parser *p);
 
-static char *SRC = "1 + 2 - 3 * 4 / 5";
+static char *SRC = "1 + 2 - 3 + 4 + 5";
+
+#define S(n) (s.items[s.nitems + (n)])
+#define LEN(n) (S(n).tok.len)
+#define TXT(n) (S(n).tok.start)
+#define V(n) (S(n).val)
 
 int main(int argc, char **argv) {
     printf("Hello, World!\n");

@@ -671,6 +671,7 @@ void genc(Grammar *g, char *usrcode, FILE *fp) {
     P("static void parse(Parser *p) {\n");
     indent += 4;
         P("Stack s = {0};\n");
+        P("Value R = {0};");
         P("int input;\n");
         P("push(&s, (Item){0});\n");
         P("advance(p);\n");
@@ -703,7 +704,7 @@ void genc(Grammar *g, char *usrcode, FILE *fp) {
                         break;
                     }
                     case AT_GOTO:
-                        P("push(&s, (Item){%i, %i});\n", a.num, k);
+                        P("push(&s, (Item){%i, %i, {0}, R});\n", a.num, k);
                         P("input = p->cur.type;\n");
                         P("goto main_loop;\n");
                         break;
